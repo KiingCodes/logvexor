@@ -28,3 +28,6 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## App structure
+- Keep LogVexor screens as top-level TanStack routes with a shared workspace shell; until the user's Supabase project is connected, auth and organization actions must not claim persistence, and security screens must not imply scans or fabricated results.
