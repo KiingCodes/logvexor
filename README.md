@@ -1,14 +1,16 @@
-# Welcome to your Lovable project
+# LogVexor
+
+Build a professional, modern cybersecurity SaaS platform called LogVexor. The platform will help businesses monitor their cybersecurity posture, discover exposed assets, identify vulnerabilities, assess security risks and receive remediation guidance. Start by building the application foundation, including professional login and registration pages, organisation onboarding, main dashboard layout, sidebar navigation, responsive design, and a clean, premium cybersecurity visual identity. Do not create fake scan results or pretend scanning functionality exists. Prepare the application for Supabase integration. Don't create any database in Lovable cloud. I want to use my own supabase project.
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/b604e1ad-da98-4fb2-ab45-3e23f13824af).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +22,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
