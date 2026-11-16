@@ -30,7 +30,7 @@ const navigation = [
   { label: "Settings", to: "/settings", icon: Settings2 },
 ] as const;
 
-function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: (() => void) | undefined }) {
   return (
     <nav aria-label="Main navigation" className="space-y-1">
       {navigation.map((item) => {

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowUpRight, Database, Fingerprint, PlugZap, ShieldCheck } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
