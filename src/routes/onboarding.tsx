@@ -1,11 +1,13 @@
-import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useRef, useState } from "react";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Building2, Globe2, ShieldCheck } from "lucide-react";
 
+import { useAuth } from "@/components/auth-context";
 import { LogVexorBrand } from "@/components/logvexor-brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createOrganization } from "@/lib/organization-onboarding";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -22,11 +24,57 @@ export const Route = createFileRoute("/onboarding")({
 });
 
 function OnboardingPage() {
-  const [notice, setNotice] = useState("");
+  const router = useRouter();
+  const { user } = useAuth();
+  const submissionInProgress = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setNotice("Your organization has not been saved. Connect your Supabase project to enable workspace setup.");
+    if (submissionInProgress.current) return;
+
+    setErrorMessage("");
+    if (!user) {
+      setErrorMessage("Sign in before creating an organization.");
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const organizationName = String(formData.get("organizationName") ?? "").trim();
+    const website = String(formData.get("website") ?? "").trim() || null;
+
+    if (!organizationName) {
+      setErrorMessage("Enter an organization name.");
+      return;
+    }
+
+    submissionInProgress.current = true;
+    setSubmitting(true);
+    try {
+      const organizationId = await createOrganization(organizationName, website);
+      router.history.push(`/?organizationId=${encodeURIComponent(organizationId)}`);
+    } catch (error) {
+      const code =
+        typeof error === "object" && error !== null && "code" in error
+          ? error.code
+          : undefined;
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof error.message === "string"
+          ? error.message
+          : "Please try again.";
+      setErrorMessage(
+        code === "23505"
+          ? "An organization with that name may already exist. Try a different name."
+          : `Could not create the organization. ${message}`,
+      );
+    } finally {
+      submissionInProgress.current = false;
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -64,7 +112,14 @@ function OnboardingPage() {
           <form onSubmit={handleSubmit} className="mt-7 space-y-5">
             <div className="space-y-2">
               <Label htmlFor="organization-name">Organization name</Label>
-              <Input id="organization-name" name="organizationName" placeholder="Acme, Inc." required />
+              <Input
+                id="organization-name"
+                name="organizationName"
+                placeholder="Acme, Inc."
+                maxLength={120}
+                required
+                disabled={submitting}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="organization-website">Company website</Label>
@@ -76,19 +131,20 @@ function OnboardingPage() {
                   type="url"
                   placeholder="https://example.com"
                   className="pl-9"
+                  disabled={submitting}
                 />
               </div>
             </div>
-            <Button type="submit" className="h-10 w-full sm:w-auto">
-              Create organization
+            <Button type="submit" className="h-10 w-full sm:w-auto" disabled={submitting}>
+              {submitting ? "Creating organization..." : "Create organization"}
             </Button>
           </form>
           <p className="mt-5 rounded-md border border-border bg-muted px-3 py-2.5 text-xs leading-5 text-muted-foreground">
-            Organization setup is not connected yet. Submitting this form will not save or send your information.
+            Your organization details will be saved to your LogVexor workspace.
           </p>
-          {notice && (
-            <p role="status" className="mt-3 rounded-md border border-signal/25 bg-signal-soft px-3 py-2.5 text-sm leading-5">
-              {notice}
+          {errorMessage && (
+            <p role="alert" className="mt-3 rounded-md border border-destructive/25 bg-destructive/5 px-3 py-2.5 text-sm leading-5 text-destructive">
+              {errorMessage}
             </p>
           )}
         </section>

@@ -10,13 +10,21 @@
 
 ## What Lovable manages
 
-Rules outside this block are the project's own. Change the pieces below in
-Lovable, not by hand. With the [Lovable MCP](https://mcp.lovable.dev)
+Rules outside this block are the project's own. The remaining Lovable-managed
+pieces below must be changed in Lovable, not by hand. With the [Lovable MCP](https://mcp.lovable.dev)
 connected, `send_message` asks Lovable to do it; otherwise ask the user to
 use the editor.
 
-- **Database.** Do not add or edit `supabase/migrations/` or `drizzle/`.
-  Ask Lovable to change the schema.
+- **Database migrations.**
+  1. Migrations may be created and maintained in VS Code.
+  2. GitHub Copilot may prepare SQL migration files inside `supabase/migrations/`.
+  3. Every migration must be reviewed before execution.
+  4. Approved migrations may be executed manually through the Supabase SQL Editor.
+  5. Every migration must be committed to GitHub for version control.
+  6. Never execute migrations automatically against production.
+  7. Never expose Supabase service-role keys or privileged credentials.
+  8. Maintain strict organisation-level data isolation and RLS policies.
+  9. Lovable remains responsible for frontend development and UI changes.
 - **Generated files.** Do not edit a file whose header says it is automatically
   generated.
 - **AI gateway.** Keep model calls on Lovable's gateway, and keep

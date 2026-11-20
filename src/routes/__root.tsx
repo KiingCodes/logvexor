@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -12,6 +13,10 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { AuthProvider } from "@/components/auth-provider";
+import { useAuth } from "@/components/auth-context";
+import { OrganisationProvider } from "@/components/organisation-provider";
+import { getSignInHref, isPublicAuthPath } from "@/lib/auth-routing";
 
 function NotFoundComponent() {
   return (
@@ -129,8 +134,72 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <AuthProvider>
+        <OrganisationProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <RouteAccessBoundary />
+        </OrganisationProvider>
+      </AuthProvider>
     </QueryClientProvider>
+  );
+}
+
+function RouteAccessBoundary() {
+  const { initializationError, initializing, user } = useAuth();
+  const router = useRouter();
+  const location = useRouterState({ select: (state) => state.location });
+  const isPublicRoute = isPublicAuthPath(location.pathname);
+  const returnTo = `${location.pathname}${location.searchStr}${location.hash ? `#${location.hash}` : ""}`;
+  const signInHref = getSignInHref(returnTo);
+
+  useEffect(() => {
+    if (isPublicRoute || initializing || initializationError || user) return;
+    router.history.replace(signInHref);
+  }, [initializationError, initializing, isPublicRoute, router, signInHref, user]);
+
+  if (isPublicRoute || user) {
+    return <Outlet />;
+  }
+
+  if (initializing) {
+    return (
+      <main
+        role="status"
+        aria-live="polite"
+        className="flex min-h-screen items-center justify-center bg-background px-5"
+      >
+        <p className="text-sm text-muted-foreground">Restoring your session...</p>
+      </main>
+    );
+  }
+
+  if (initializationError) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-5">
+        <section className="max-w-md rounded-md border border-border bg-card p-6 text-center">
+          <h1 className="text-lg font-semibold">Unable to verify your session</h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Workspace access is paused until your session can be verified. You can try
+            signing in again.
+          </p>
+          <a
+            href={signInHref}
+            className="mt-5 inline-flex min-h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
+          >
+            Go to sign in
+          </a>
+        </section>
+      </main>
+    );
+  }
+
+  return (
+    <main
+      role="status"
+      aria-live="polite"
+      className="flex min-h-screen items-center justify-center bg-background px-5"
+    >
+      <p className="text-sm text-muted-foreground">Redirecting to sign in...</p>
+    </main>
   );
 }

@@ -1,26 +1,76 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { Eye, EyeOff, Fingerprint, ShieldCheck } from "lucide-react";
 
+import { useAuth } from "@/components/auth-context";
 import { LogVexorBrand } from "@/components/logvexor-brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getSafeReturnTo } from "@/lib/auth-routing";
 
 type AuthMode = "sign-in" | "register";
 
 export function AuthScreen({ mode }: { mode: AuthMode }) {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [returnTo] = useState(() => {
+    if (typeof window === "undefined") return null;
+    return getSafeReturnTo(new URLSearchParams(window.location.search).get("redirect"));
+  });
+  const [feedback, setFeedback] = useState<{
+    kind: "success" | "error";
+    message: string;
+    continueToWorkspace?: boolean;
+  } | null>(null);
+  const { initializationError, initializing, signIn, signUp } = useAuth();
   const registering = mode === "register";
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setNotice(
-      registering
-        ? "Account creation is ready once your Supabase project is connected. No account has been created."
-        : "Sign-in is ready once your Supabase project is connected. No credentials were sent.",
-    );
+    setFeedback(null);
+    setSubmitting(true);
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const email = String(formData.get("email") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+
+    try {
+      if (registering) {
+        const fullName = String(formData.get("fullName") ?? "").trim();
+        const { hasSession } = await signUp(email, password, fullName);
+        setFeedback({
+          kind: "success",
+          message: hasSession
+            ? "Your account has been created and you are signed in."
+            : "Account created. Check your email to confirm your address before signing in.",
+          continueToWorkspace: hasSession,
+        });
+      } else {
+        const { hasSession } = await signIn(email, password);
+        setFeedback({
+          kind: "success",
+          message: hasSession ? "You are signed in." : "Sign-in completed.",
+          continueToWorkspace: hasSession,
+        });
+      }
+
+      const passwordInput = form.elements.namedItem("password");
+      if (passwordInput instanceof HTMLInputElement) passwordInput.value = "";
+    } catch (error) {
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof error.message === "string"
+          ? error.message
+          : "Authentication failed. Please try again.";
+      setFeedback({ kind: "error", message });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -68,18 +118,35 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             {registering && (
               <div className="space-y-2">
                 <Label htmlFor="full-name">Full name</Label>
-                <Input id="full-name" name="fullName" autoComplete="name" placeholder="Your name" required />
+                <Input
+                  id="full-name"
+                  name="fullName"
+                  autoComplete="name"
+                  placeholder="Your name"
+                  required
+                  disabled={submitting}
+                />
               </div>
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Work email</Label>
-              <Input id="email" name="email" type="email" autoComplete="email" placeholder="you@company.com" required />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@company.com"
+                required
+                disabled={submitting}
+              />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="password">Password</Label>
                 {!registering && (
-                  <span className="text-xs text-muted-foreground">Password recovery available after connection</span>
+                  <span className="text-xs text-muted-foreground">
+                    Password recovery is not available yet
+                  </span>
                 )}
               </div>
               <div className="relative">
@@ -92,6 +159,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                   placeholder={registering ? "At least 10 characters" : "Enter your password"}
                   className="pr-11"
                   required
+                  disabled={submitting}
                 />
                 <Button
                   type="button"
@@ -100,23 +168,56 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                   className="absolute right-1 top-1/2 size-8 -translate-y-1/2 text-muted-foreground"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   onClick={() => setShowPassword((shown) => !shown)}
+                  disabled={submitting}
                 >
                   {showPassword ? <EyeOff /> : <Eye />}
                 </Button>
               </div>
             </div>
-            <Button type="submit" className="h-10 w-full">
-              {registering ? "Create account" : "Sign in"}
+            <Button type="submit" className="h-10 w-full" disabled={submitting || initializing}>
+              {submitting
+                ? registering
+                  ? "Creating account..."
+                  : "Signing in..."
+                : registering
+                  ? "Create account"
+                  : "Sign in"}
             </Button>
           </form>
 
           <p className="mt-4 rounded-md border border-border bg-muted px-3 py-2.5 text-xs leading-5 text-muted-foreground">
-            Authentication activates after your Supabase project is connected. Form details are not sent or stored.
+            Authentication uses Supabase. If email confirmation is enabled, confirm your
+            address before signing in.
           </p>
-          {notice && (
-            <p role="status" className="mt-3 rounded-md border border-signal/25 bg-signal-soft px-3 py-2.5 text-sm leading-5 text-foreground">
-              {notice}
+          {initializationError && (
+            <p
+              role="alert"
+              className="mt-3 rounded-md border border-destructive/25 bg-destructive/5 px-3 py-2.5 text-sm leading-5 text-destructive"
+            >
+              Could not restore your session: {initializationError}
             </p>
+          )}
+          {feedback && (
+            <p
+              role={feedback.kind === "error" ? "alert" : "status"}
+              className={`mt-3 rounded-md border px-3 py-2.5 text-sm leading-5 ${
+                feedback.kind === "error"
+                  ? "border-destructive/25 bg-destructive/5 text-destructive"
+                  : "border-signal/25 bg-signal-soft text-foreground"
+              }`}
+            >
+              {feedback.message}
+            </p>
+          )}
+          {feedback?.continueToWorkspace && (
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3 w-full"
+              onClick={() => router.history.push(returnTo ?? "/")}
+            >
+              {returnTo ? "Continue to requested page" : "Continue to workspace"}
+            </Button>
           )}
           <p className="mt-6 text-center text-sm text-muted-foreground">
             {registering ? "Already have an account? " : "New to LogVexor? "}

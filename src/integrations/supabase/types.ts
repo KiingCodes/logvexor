@@ -6,6 +6,8 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+export type OrganizationRole = "owner" | "admin" | "analyst" | "viewer"
+
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -14,16 +16,103 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_path: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_path?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_path?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          membership_lock_version: number
+          name: string
+          slug: string
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          membership_lock_version?: number
+          name: string
+          slug: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          membership_lock_version?: number
+          name?: string
+          slug?: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      organization_memberships: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          org_id: string
+          role: OrganizationRole
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          org_id: string
+          role: OrganizationRole
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          org_id?: string
+          role?: OrganizationRole
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_organization: {
+        Args: {
+          p_name: string
+          p_slug: string
+          p_website_url?: string | null
+        }
+        Returns: string
+      }
     }
     Enums: {
-      [_ in never]: never
+      organization_role: OrganizationRole
     }
     CompositeTypes: {
       [_ in never]: never

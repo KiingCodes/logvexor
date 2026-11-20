@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowUpRight, Database, Fingerprint, PlugZap, ShieldCheck } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
@@ -35,7 +35,8 @@ function SettingsPage() {
           </div>
           <div className="flex flex-col items-start gap-3">
             <p className="text-sm leading-6 text-muted-foreground">
-              Sign-in, registration, and profile storage are prepared as screens, but are not active until your Supabase project is connected.
+              Email and password sign-in and registration use the configured Supabase project.
+              Profile storage is not implemented yet.
             </p>
             <Button asChild variant="outline" size="sm">
               <a href="/sign-in">Open sign-in <ArrowUpRight className="size-4" /></a>
@@ -53,7 +54,8 @@ function SettingsPage() {
               <span className="size-1.5 rounded-full bg-signal" /> Not connected
             </span>
             <p className="text-sm leading-6 text-muted-foreground">
-              Connect your own Supabase project in Project Settings → General → External Supabase to enable account and organization storage. No Lovable Cloud database has been created.
+              Authentication is connected to Supabase. Asset, scan, finding, and risk data
+              are not yet connected to the database.
             </p>
             <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
               <ShieldCheck className="mt-0.5 size-4 shrink-0 text-positive" />
